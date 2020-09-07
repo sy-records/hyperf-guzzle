@@ -1,5 +1,5 @@
 {
-    "name": "sy-records/guzzle",
+    "name": "sy-records/hyperf-guzzle",
     "description": "Swoole coroutine handler for guzzle",
     "type": "library",
     "license": "MIT",
