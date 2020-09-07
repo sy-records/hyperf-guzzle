@@ -20,7 +20,12 @@ use GuzzleHttp\TransferStats;
 use Psr\Http\Message\RequestInterface;
 use Swoole\Coroutine;
 use Swoole\Coroutine\Http\Client;
+use SwooleTracker\Stats;
+
 use function GuzzleHttp\is_host_in_noproxy;
+use function getSwooleTrackerSpanId;
+use function getSwooleTrackerTraceId;
+
 
 /**
  * Http handler that uses Swoole Coroutine as a transport layer.
@@ -51,14 +56,14 @@ class CoroutineHandler
 
         $client = new Client($host, $port, $ssl);
         $client->setMethod($request->getMethod());
-        $client->setData((string) $request->getBody());
+        $client->setData((string)$request->getBody());
 
         // 初始化Headers
         $this->initHeaders($client, $request, $options);
         // 初始化配置
         $settings = $this->getSettings($request, $options);
         // 设置客户端参数
-        if (! empty($settings)) {
+        if (!empty($settings)) {
             $client->set($settings);
         }
 
@@ -88,6 +93,13 @@ class CoroutineHandler
             $headers[$name] = implode(',', $value);
         }
 
+        if (class_exists(Stats::class)
+            && function_exists('getSwooleTrackerTraceId')
+            && function_exists('getSwooleTrackerSpanId')) {
+            $headers['X-SWOOLE-TRACEID'] = getSwooleTrackerTraceId();
+            $headers['X-SWOOLE-SPANID'] = getSwooleTrackerSpanId();
+        }
+
         $userInfo = $request->getUri()->getUserInfo();
         if ($userInfo) {
             $headers['Authorization'] = sprintf('Basic %s', base64_encode($userInfo));
@@ -102,7 +114,7 @@ class CoroutineHandler
     {
         $settings = [];
         if (isset($options['delay']) && $options['delay'] > 0) {
-            Coroutine::sleep((float) $options['delay'] / 1000);
+            Coroutine::sleep((float)$options['delay'] / 1000);
         }
 
         // 验证服务端证书
@@ -115,7 +127,7 @@ class CoroutineHandler
                 $settings['ssl_host_name'] = $request->getUri()->getHost();
                 if (is_string($options['verify'])) {
                     // Throw an error if the file/folder/link path is not valid or doesn't exist.
-                    if (! file_exists($options['verify'])) {
+                    if (!file_exists($options['verify'])) {
                         throw new \InvalidArgumentException("SSL CA bundle not found: {$options['verify']}");
                     }
                     // If it's a directory or a link to a directory use CURLOPT_CAPATH.
@@ -142,7 +154,7 @@ class CoroutineHandler
                 $scheme = $request->getUri()->getScheme();
                 if (isset($options['proxy'][$scheme])) {
                     $host = $request->getUri()->getHost();
-                    if (! isset($options['proxy']['no']) || ! is_host_in_noproxy($host, $options['proxy']['no'])) {
+                    if (!isset($options['proxy']['no']) || !is_host_in_noproxy($host, $options['proxy']['no'])) {
                         $uri = new Uri($options['proxy'][$scheme]);
                     }
                 }
