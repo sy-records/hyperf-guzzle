@@ -23,7 +23,7 @@ use Swoole\Coroutine\Http\Client;
 use SwooleTracker\Stats;
 
 use function GuzzleHttp\is_host_in_noproxy;
-use function getSwooleTrackerSpanId;
+use function genSwooleTrackerSpanId;
 use function getSwooleTrackerTraceId;
 
 
@@ -97,7 +97,7 @@ class CoroutineHandler
             && function_exists('getSwooleTrackerTraceId')
             && function_exists('getSwooleTrackerSpanId')) {
             $headers['X-SWOOLE-TRACEID'] = getSwooleTrackerTraceId();
-            $headers['X-SWOOLE-SPANID'] = getSwooleTrackerSpanId();
+            $headers['X-SWOOLE-SPANID'] = genSwooleTrackerSpanId();
         }
 
         $userInfo = $request->getUri()->getUserInfo();
